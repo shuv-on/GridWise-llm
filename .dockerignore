@@ -1,0 +1,43 @@
+# Git
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Secrets — never bake into image
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Tests (optional — remove if you want tests in image)
+tests/
+
+# Docs & logs
+*.md
+!README.md
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local artifacts
+body.json
+htmlcov/
+.coverage
