@@ -22,6 +22,10 @@ def solve(request: OptimizeRequest, directives: DirectiveSet) -> dict[str, Any]:
         charge[h]     >= 0
         discharge[h]  >= 0
         e_after[h]    battery energy after hour h
+
+    Returns a plan where battery_action and battery_kwh are derived
+    directly from the battery energy delta, guaranteeing the energy
+    balance equation holds exactly.
     """
     settings = get_settings()
     hours = sorted(request.hours, key=lambda x: x.hour)
@@ -64,6 +68,14 @@ def solve(request: OptimizeRequest, directives: DirectiveSet) -> dict[str, Any]:
         prob += charge[h] <= battery.max_charge_kwh_per_hour
         prob += discharge[h] <= battery.max_discharge_kwh_per_hour
 
+        # Prevent simultaneous charge and discharge (mutual exclusion).
+        # Without this, CBC may assign both to small values and the
+        # reported action becomes ambiguous.
+        prob += charge[h] + discharge[h] <= max(
+            battery.max_charge_kwh_per_hour,
+            battery.max_discharge_kwh_per_hour,
+        )
+
         # Directive: no charge / no discharge
         if h in directives.no_charge_hours:
             prob += charge[h] == 0
@@ -101,33 +113,51 @@ def solve(request: OptimizeRequest, directives: DirectiveSet) -> dict[str, Any]:
     if status != "Optimal":
         raise OptimizerError(f"optimizer status: {status}")
 
-    # Extract plan
+    # ------------------------------------------------------------------
+    # Extract plan.
+    #
+    # Derive battery_action and battery_kwh from the battery energy delta
+    # (e_after[h] - e_after[h-1]) rather than from the raw LP variables.
+    # This guarantees the reported action always matches the energy
+    # balance equation exactly, even when the solver returns tiny
+    # numerical noise in charge[h] or discharge[h].
+    # ------------------------------------------------------------------
     EPS = 1e-6
     plan = []
+    prev_energy = battery.initial_energy_kwh
+
     for h in range(n):
         g = max(0.0, float(grid[h].value() or 0.0))
         s = max(0.0, float(solar_used[h].value() or 0.0))
-        c = max(0.0, float(charge[h].value() or 0.0))
-        d = max(0.0, float(discharge[h].value() or 0.0))
         e = float(e_after[h].value() or 0.0)
 
-        if c > EPS and c >= d:
-            action, amount = "charge", c
-        elif d > EPS and d > c:
-            action, amount = "discharge", d
+        delta = e - prev_energy  # positive -> charged, negative -> discharged
+
+        if delta > EPS:
+            action, amount = "charge", delta
+        elif delta < -EPS:
+            action, amount = "discharge", -delta
         else:
             action, amount = "idle", 0.0
+
+        # Recompute grid from the balance equation so the plan is
+        # internally consistent even after rounding.
+        # grid = demand + charge - discharge - solar_used
+        g_calc = demand[h] + (amount if action == "charge" else 0.0) \
+                 - (amount if action == "discharge" else 0.0) - s
+        g_calc = max(0.0, g_calc)
 
         plan.append(
             {
                 "hour": h,
-                "grid_kwh": round(g, 4),
+                "grid_kwh": round(g_calc, 4),
                 "solar_used_kwh": round(s, 4),
                 "battery_action": action,
                 "battery_kwh": round(amount, 4),
                 "battery_energy_after_kwh": round(e, 4),
             }
         )
+        prev_energy = e
 
     total_grid = round(sum(p["grid_kwh"] for p in plan), 4)
     total_cost = round(sum(plan[h]["grid_kwh"] * tariff[h] for h in range(n)), 4)

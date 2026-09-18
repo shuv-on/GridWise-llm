@@ -1,0 +1,14 @@
+"""Tests for GET /health."""
+
+
+def test_health_returns_ok(client):
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok"}
+
+
+def test_health_response_schema(client):
+    resp = client.get("/health")
+    body = resp.json()
+    assert "status" in body
+    assert isinstance(body["status"], str)
