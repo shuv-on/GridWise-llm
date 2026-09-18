@@ -4,13 +4,19 @@
 
 LLM-assisted operator directive interpretation + 24-hour energy cost optimization.
 
+> **Live Demo:** https://gridwise-llm-qk9j.onrender.com
+> **API Docs:** https://gridwise-llm-qk9j.onrender.com/docs
+
 ---
 
 ## Table of Contents
 
 1. [What This Project Does](#what-this-project-does)
 2. [Architecture](#architecture)
-3. [Quick Start (5 minutes)](#quick-start-5-minutes)
+3. [Quick Start](#quick-start)
+   - [Linux (Ubuntu 22.04+)](#linux-ubuntu-2204)
+   - [macOS (12+)](#macos-12)
+   - [Windows 11](#windows-11)
 4. [Environment Variables](#environment-variables)
 5. [Running the Service](#running-the-service)
 6. [API Reference](#api-reference)
@@ -33,12 +39,15 @@ GridWise receives a 24-hour energy scenario (demand, solar, tariff, battery stat
 4. Returns both the interpretation and the final hourly plan as JSON
 
 **Supported directive types:**
-- `solar_reduction` — usable solar reduced by a factor during specific hours
-- `minimum_battery_reserve` — battery must stay at or above a level
-- `no_charge_window` — battery charging disabled during hours
-- `no_discharge_window` — battery discharging disabled during hours
-- `max_grid_window` — grid import capped during hours
-- `no_op` — irrelevant note (ignored)
+
+| Directive | Meaning |
+|---|---|
+| `solar_reduction` | Usable solar reduced by a factor during specific hours |
+| `minimum_battery_reserve` | Battery must stay at or above a level |
+| `no_charge_window` | Battery charging disabled during hours |
+| `no_discharge_window` | Battery discharging disabled during hours |
+| `max_grid_window` | Grid import capped during hours |
+| `no_op` | Irrelevant note (ignored) |
 
 ---
 
@@ -100,78 +109,222 @@ GridWise receives a 24-hour energy scenario (demand, solar, tariff, battery stat
 
 ---
 
-## Quick Start (5 minutes)
+## Quick Start
 
-### Prerequisites
+> **Prerequisite:** Python 3.11+ (3.12 recommended) installed on your machine.
 
-- **Python 3.11+** (3.12 recommended)
-- **pip** and **venv**
-- **curl** (for testing)
-- A valid **LLM API key** (Groq / OpenAI / Gemini)
+### Linux (Ubuntu 22.04+)
 
-### Step 1 — Clone or navigate to project
+#### 1. Install system dependencies
 
 ```bash
-cd /path/to/gridwise
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip curl git
 ```
 
-### Step 2 — Create virtual environment
+#### 2. Clone and enter project
+
+```bash
+git clone <your-repo-url> gridwise
+cd gridwise
+```
+
+#### 3. Create virtual environment
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-On Ubuntu, if `python3-venv` is missing:
-
-```bash
-sudo apt update
-sudo apt install -y python3-venv python3-pip
-```
-
-### Step 3 — Install dependencies
+#### 4. Install dependencies
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 4 — Configure environment
+#### 5. Configure environment
 
 ```bash
 cp .env.example .env
-nano .env
+nano .env        # paste your LLM_API_KEY
 ```
 
-Fill in **at minimum**:
-
-```env
-LLM_PROVIDER=groq
-LLM_API_KEY=your-real-key-here
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_MODEL=openai/gpt-oss-120b
-```
-
-> **Never commit `.env` to git.** It's already in `.gitignore`.
-
-### Step 5 — Start the server
+#### 6. Start the server
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Step 6 — Verify
-
-Open a second terminal:
+#### 7. Verify in another terminal
 
 ```bash
-# Health check
 curl http://localhost:8000/health
-# Expected: {"status":"ok"}
-
-# Interactive docs
-# Open in browser: http://localhost:8000/docs
+# → {"status":"ok"}
 ```
+
+---
+
+### macOS (12+)
+
+#### 1. Install Homebrew (if not already installed)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### 2. Install Python 3.12
+
+```bash
+brew install python@3.12
+```
+
+#### 3. Clone and enter project
+
+```bash
+git clone <your-repo-url> gridwise
+cd gridwise
+```
+
+#### 4. Create virtual environment
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+#### 5. Install dependencies
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+#### 6. Configure environment
+
+```bash
+cp .env.example .env
+open -e .env        # paste your LLM_API_KEY, save
+```
+
+#### 7. Start the server
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### 8. Verify in another terminal
+
+```bash
+curl http://localhost:8000/health
+# → {"status":"ok"}
+```
+
+> **macOS Note:** If you have Apple Silicon (M1/M2/M3), all dependencies install native. No Rosetta needed.
+
+---
+
+### Windows 11
+
+#### Option A: PowerShell (recommended)
+
+Open **PowerShell** as a normal user (not admin).
+
+##### 1. Install Python 3.12
+
+Download from https://www.python.org/downloads/ — **check "Add Python to PATH"** during install.
+
+Verify:
+
+```powershell
+python --version
+# Should show: Python 3.12.x
+```
+
+##### 2. Install Git (if not already installed)
+
+Download from https://git-scm.com/download/win
+
+##### 3. Clone and enter project
+
+```powershell
+git clone <your-repo-url> gridwise
+cd gridwise
+```
+
+##### 4. Create virtual environment
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+> **If you see "running scripts is disabled":**
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+> Then activate again.
+
+##### 5. Install dependencies
+
+```powershell
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+##### 6. Configure environment
+
+```powershell
+Copy-Item .env.example .env
+notepad .env        # paste your LLM_API_KEY, save
+```
+
+##### 7. Start the server
+
+```powershell
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+##### 8. Verify in another PowerShell window
+
+```powershell
+curl http://localhost:8000/health
+# → {"status":"ok"}
+```
+
+---
+
+#### Option B: Git Bash (if you prefer Unix-style commands)
+
+##### 1. Install Git for Windows
+
+Download from https://git-scm.com/download/win — this includes **Git Bash**.
+
+##### 2. Open Git Bash, then
+
+```bash
+git clone <your-repo-url> gridwise
+cd gridwise
+
+python -m venv .venv
+source .venv/Scripts/activate    # Note: Scripts, not bin
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+cp .env.example .env
+notepad .env                      # paste your LLM_API_KEY, save
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+> **Windows Note:** In Git Bash the activate path is `.venv/Scripts/activate`, not `.venv/bin/activate`.
+
+---
+
+#### Option C: WSL2 (Ubuntu on Windows)
+
+If you already have WSL2 with Ubuntu installed, follow the **Linux** steps inside WSL. This is the smoothest path if you use Docker Desktop or want identical behavior to Linux CI.
 
 ---
 
@@ -209,13 +362,21 @@ All variables are read from `.env`. See `.env.example` for the full list.
 
 ### Development (with auto-reload)
 
+**Linux / macOS / Git Bash:**
 ```bash
 source .venv/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+**Windows PowerShell:**
+```powershell
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
 ### Production-style (Gunicorn)
 
+**Linux / macOS:**
 ```bash
 gunicorn app.main:app \
   --workers 2 \
@@ -224,19 +385,20 @@ gunicorn app.main:app \
   --timeout 60
 ```
 
-### Quick helpers
+**Windows:** Gunicorn does not support Windows. Use **Docker** or **WSL2** for production-style runs.
+
+### Quick helpers (Linux / macOS / Git Bash)
 
 ```bash
-# Using Makefile
 make install     # install dependencies
 make run         # start dev server
 make test        # run pytest
 make smoke       # run smoke test
+make samples     # run all 10 public samples
 make docker      # build docker image
-
-# Using run.sh
-./run.sh
 ```
+
+> **Windows PowerShell users:** `make` is not installed by default. Either use Git Bash (which has `make`) or run the underlying commands directly.
 
 ---
 
@@ -269,7 +431,7 @@ Main endpoint.
   "hours": [
     {"hour": 0, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 6},
     {"hour": 1, "demand_kwh": 95, "solar_kwh": 0, "tariff_bdt_per_kwh": 5},
-    ... 22 more entries ...
+    "... 22 more entries ..."
   ],
   "battery": {
     "capacity_kwh": 220,
@@ -289,16 +451,6 @@ Main endpoint.
 | `operator_notes` | array[1..3] of string | Non-empty strings |
 | `hours` | array[24] | Exactly 24 entries for hours 0..23 |
 | `battery` | object | See battery fields below |
-
-**Battery object:**
-
-| Field | Type |
-|---|---|
-| `capacity_kwh` | float > 0 |
-| `initial_energy_kwh` | float ≥ 0 |
-| `minimum_energy_kwh` | float ≥ 0 |
-| `max_charge_kwh_per_hour` | float > 0 |
-| `max_discharge_kwh_per_hour` | float > 0 |
 
 **Response** `200 OK`:
 
@@ -324,13 +476,13 @@ Main endpoint.
   "hourly_plan": [
     {
       "hour": 0,
-      "grid_kwh": 100,
-      "solar_used_kwh": 0,
-      "battery_action": "idle",
-      "battery_kwh": 0,
-      "battery_energy_after_kwh": 110
+      "grid_kwh": 50.0,
+      "solar_used_kwh": 0.0,
+      "battery_action": "discharge",
+      "battery_kwh": 50.0,
+      "battery_energy_after_kwh": 60.0
     },
-    ... 23 more entries ...
+    "... 23 more entries ..."
   ],
   "total_grid_kwh": 2703.0,
   "total_cost_bdt": 37108.0,
@@ -345,6 +497,7 @@ Main endpoint.
 |---|---|
 | `200` | Success |
 | `400` | Malformed JSON or invalid request |
+| `405` | Wrong HTTP method (e.g., GET instead of POST) |
 | `422` | LLM output failed guardrails |
 | `500` | Internal error |
 | `503` | LLM provider rate-limited (retry with `Retry-After` header) |
@@ -355,8 +508,15 @@ Main endpoint.
 
 ### Run unit tests
 
+**Linux / macOS / Git Bash:**
 ```bash
 source .venv/bin/activate
+pytest -v
+```
+
+**Windows PowerShell:**
+```powershell
+.\.venv\Scripts\Activate.ps1
 pytest -v
 ```
 
@@ -370,32 +530,38 @@ pytest --cov=app --cov-report=term-missing
 
 Make sure the server is running first, then:
 
+**Linux / macOS / Git Bash:**
 ```bash
 bash scripts/smoke_test.sh
 ```
 
-Or:
-
-```bash
-make smoke
-```
+**Windows PowerShell:** Use Git Bash — `bash scripts/smoke_test.sh`.
 
 ### Run all 10 public sample cases
 
 ```bash
 python3 scripts/run_public_samples.py
+
+# Against deployed URL:
+python3 scripts/run_public_samples.py --url https://gridwise-llm-qk9j.onrender.com
 ```
 
 This validates:
-
 - All 10 cases return `200 OK`
 - Each response has 24 hourly entries
 - Battery, energy balance, end-of-day neutrality all hold
 - Directive interpretations match ground truth
 
+**Expected result:** `10 passed, 0 failed`
+
 ---
 
 ## Docker
+
+> **Note:** Docker Desktop must be installed.
+> - **Windows 11:** https://docs.docker.com/desktop/install/windows-install/
+> - **macOS:** https://docs.docker.com/desktop/install/mac-install/
+> - **Linux:** https://docs.docker.com/engine/install/
 
 ### Build the image
 
@@ -405,10 +571,14 @@ docker build -t gridwise:latest .
 
 ### Run the container
 
+**Linux / macOS:**
 ```bash
-docker run --rm -p 8000:8000 \
-  --env-file .env \
-  gridwise:latest
+docker run --rm -p 8000:8000 --env-file .env gridwise:latest
+```
+
+**Windows PowerShell:**
+```powershell
+docker run --rm -p 8000:8000 --env-file .env gridwise:latest
 ```
 
 ### Verify
@@ -421,23 +591,17 @@ curl http://localhost:8000/health
 ### Docker Compose
 
 ```bash
-docker compose up --build
+docker compose up -d --build
+docker compose logs -f gridwise
+docker compose down
 ```
 
 ### Docker fallback (for organizers)
 
-Image reference for judging:
-
-```
+```bash
 docker pull <your-registry>/gridwise:<tag>
 docker run --rm -p 8000:8000 --env-file .env <your-registry>/gridwise:<tag>
 ```
-
-**Image requirements:**
-
-- Binds to `0.0.0.0:8000`
-- Reads env vars from `.env` at runtime
-- **No secrets baked into the image**
 
 ---
 
@@ -473,7 +637,7 @@ gridwise/
 │   │   └── logging.py             # Structured logging
 │   └── utils/
 │       └── time_utils.py          # Hour parsing helpers
-├── tests/                         # pytest suite
+├── tests/                         # pytest suite (29 tests)
 ├── scripts/
 │   ├── smoke_test.sh              # End-to-end test
 │   └── run_public_samples.py      # Sample validator
@@ -502,14 +666,12 @@ Cache key = `sha256(normalized_notes + battery_capacity)`. If hit, skip LLM. Oth
 
 ### 3. LLM interpretation
 
-`app/services/llm/openai_client.py` calls the provider with a **strict JSON-only system prompt** (`app/services/llm/prompts.py`) that:
+`app/services/llm/openai_client.py` calls the provider with a strict JSON-only system prompt (`app/services/llm/prompts.py`) that:
 
 - Enumerates all directive types and their exact `structured_adjustment` shapes
 - Explains time rules (start-inclusive, end-exclusive)
 - Explains percentage normalization (`80% reduction` → `factor = 0.2`)
 - Requires exactly one entry per note, in `note_index` order
-
-Response is parsed as JSON. Failure → `LLMError`.
 
 ### 4. Guardrail validation
 
@@ -522,8 +684,6 @@ Response is parsed as JSON. Failure → `LLMError`.
 - `no_op` → `applies = false`, `structured_adjustment = null`
 - Every other type → `applies = true`, adjustment present
 - `note_index` matches position
-
-Any violation → `GuardrailError` → `422`.
 
 ### 5. Optimization
 
@@ -542,14 +702,11 @@ Any violation → `GuardrailError` → `422`.
 - Energy balance: `grid + solar_used + discharge = demand + charge`
 - Battery transition: `e_after[h] = e_after[h-1] + charge[h] - discharge[h]`
 - Rate limits on charge/discharge
+- Mutual exclusion: `charge[h] + discharge[h] ≤ max_rate`
 - Directive-driven: no-charge hours, no-discharge hours, grid caps, reserve floors
 - End-of-day: `e_after[23] = initial_energy_kwh`
 
 Solved with CBC. Result is returned with `grid_kwh`, `solar_used_kwh`, `battery_action`, `battery_kwh`, `battery_energy_after_kwh` per hour.
-
-### 6. Response
-
-Final JSON includes both the interpretation and the plan. `total_grid_kwh`, `total_cost_bdt`, `peak_grid_kwh` are recomputed from the plan.
 
 ---
 
@@ -574,8 +731,15 @@ Your `LLM_API_KEY` is invalid. Check the provider dashboard.
 Your `LLM_MODEL` is wrong or deprecated. Check the provider's model list:
 
 ```bash
+# Linux / macOS / Git Bash
 curl https://api.groq.com/openai/v1/models \
   -H "Authorization: Bearer $LLM_API_KEY"
+```
+
+```powershell
+# Windows PowerShell
+curl https://api.groq.com/openai/v1/models `
+  -H "Authorization: Bearer $env:LLM_API_KEY"
 ```
 
 ### `LLMRateLimited` / `503 Service Unavailable`
@@ -586,42 +750,70 @@ You hit the provider's rate limit. Wait for `Retry-After` seconds, or switch pro
 
 Your file path is wrong. `curl --data @file.json` reads from the **current directory**. Run `pwd` and `ls file.json` first.
 
-### Server starts but `.env` values not applied
+**Windows PowerShell — use `curl.exe`** (the built-in `curl` alias behaves differently):
 
-`.env` values are cached with `@lru_cache`. **Restart `uvicorn`** after editing.
+```powershell
+curl.exe -s -X POST http://localhost:8000/optimize-energy `
+  -H "Content-Type: application/json" `
+  --data "@body.json"
+```
 
-### `Address already in use`
-
-Another process on port 8000. Kill it:
+### `Address already in use` (Linux / macOS)
 
 ```bash
 lsof -i :8000
 kill -9 <PID>
 ```
 
-Or use a different port:
+### `Address already in use` (Windows)
+
+```powershell
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+```
+
+### `Set-ExecutionPolicy` error (Windows PowerShell)
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+### `venv\Scripts\activate` vs `venv/bin/activate`
+
+- **Linux / macOS / Git Bash:** `.venv/bin/activate`
+- **Windows PowerShell / cmd:** `.venv\Scripts\Activate.ps1`
+
+### Server starts but `.env` values not applied
+
+`.env` values are cached with `@lru_cache`. **Restart `uvicorn`** after editing.
+
+### Docker permission denied on Linux
 
 ```bash
-uvicorn app.main:app --port 8001
+sudo usermod -aG docker $USER
+newgrp docker
+# or logout / login
 ```
 
 ---
 
 ## Known Limitations
 
-1. **Single LLM provider.** No automatic fallback to a second provider if the primary rate-limits. (Planned for later.)
+1. **Single LLM provider.** No automatic fallback to a second provider if the primary rate-limits. (Planned.)
 
-2. **In-memory cache.** Cache is per-process; restarting the server clears it. For multi-worker deployments, use Redis.
+2. **In-memory cache.** Per-process; restarting the server clears it. For multi-worker deployments, use Redis.
 
 3. **No persistent logging.** Logs go to stdout. For production, ship to a log aggregator.
 
-4. **LP solver time limit.** CBC may return a sub-optimal solution on pathological inputs (time limit 10s). Public cases solve in <100ms.
+4. **LP solver time limit.** CBC may return a sub-optimal solution on pathological inputs (10s limit). Public cases solve in <100ms.
 
-5. **Time window convention.** Only whole-hour windows supported. Minutes are not part of the schema.
+5. **Time window convention.** Only whole-hour windows supported.
 
-6. **No authentication.** The API is public and unauthenticated. Add a gateway if deploying to a sensitive environment.
+6. **No authentication.** The API is public and unauthenticated.
 
-7. **`.env` is cached.** Editing `.env` requires a server restart.
+7. **`.env` is cached.** Editing requires a server restart.
+
+8. **Gunicorn not available on Windows.** Use Docker or WSL2 for production-style runs on Windows.
 
 ---
 
@@ -636,7 +828,6 @@ uvicorn app.main:app --port 8001
 
 ## Team / Credits
 
-- **Team:** <your team name>
 - **Event:** BUP CSE Fest 2026 · Hackathon · Online Preliminary
 - **Organizer:** Bangladesh University of Professionals, Mirpur Cantonment, Dhaka
 - **In association with:** Poridhi
