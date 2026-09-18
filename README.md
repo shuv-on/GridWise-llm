@@ -710,6 +710,85 @@ Solved with CBC. Result is returned with `grid_kwh`, `solar_used_kwh`, `battery_
 
 ---
 
+## Design Decisions & Trade-offs
+
+A short overview of the key choices and the reasoning behind them.
+
+### 1. Why FastAPI (not Django / Flask)
+
+| Criterion | FastAPI | Django |
+|---|---|---|
+| Setup time | ✅ Minutes | ❌ ~30 min boilerplate |
+| Native async | ✅ Yes | ⚠️ Partial |
+| Pydantic validation | ✅ Built-in | ❌ DRF serializers needed |
+| Auto OpenAPI docs | ✅ At `/docs` | ❌ Manual |
+
+**Chosen:** FastAPI — best fit for a two-endpoint JSON API with strict schema validation. Django would be overkill (no admin, no ORM, no auth needed).
+
+### 2. Why Groq (`openai/gpt-oss-120b`) as the LLM
+
+| Provider | Latency | Cost | JSON mode |
+|---|---|---|---|
+| **Groq** | ✅ ~1-2s | ✅ Free tier | ✅ Yes |
+| OpenAI | ~2-3s | ❌ Paid | ✅ Yes |
+| Gemini | ~2-3s | ✅ Free tier | ⚠️ Via compat layer |
+
+**Chosen:** Groq — fastest latency, free tier sufficient for prelim, OpenAI-compatible API (drop-in for `openai` SDK).
+
+**Trade-off:** Single provider, no automatic fallback. If Groq rate-limits, requests return `503 Retry-After`. Fallback chain (Groq → Gemini → OpenRouter) is on the roadmap.
+
+### 3. Why PuLP + CBC for optimization
+
+| Solver | Type | Ease | Speed |
+|---|---|---|---|
+| **PuLP + CBC** | ✅ LP/MILP | ✅ Pure Python | ✅ ms-scale |
+| OR-Tools | MILP | ⚠️ Heavier install | ✅ Fast |
+| SciPy linprog | LP only | ✅ Built-in | ✅ Fast |
+
+**Chosen:** PuLP — this is a **linear program** (grid, charge, discharge are continuous), CBC solves it in <100 ms per case. Adding MILP (for integer battery actions) is unnecessary complexity.
+
+**Trade-off:** CBC has a 10-second time limit; pathological hidden cases could get sub-optimal within tolerance. Public cases all solve in <100 ms.
+
+### 4. Why deterministic guardrails after the LLM
+
+The LLM is treated as **untrusted structured data**. Every field is re-validated:
+
+- `directive_type` ∈ allowed set
+- `hours` unique ints 0-23, ascending
+- `factor` ∈ [0, 1]
+- `no_op` → `applies=false`, `structured_adjustment=null`
+- Every other type → `applies=true`
+
+**Why:** LLMs hallucinate. Without guardrails, a bad output (e.g., `hours: [25]`) could silently corrupt the optimizer.
+
+**Trade-off:** Some valid-but-rare phrasings may be rejected if the LLM emits them in an unexpected shape. Mitigated by a strict prompt template.
+
+### 5. Why an in-memory LRU cache (not Redis)
+
+- Prelim runs are single-worker
+- Cache is per-process, max 512 entries
+- Cleared on restart
+
+**Trade-off:** Won't survive multi-worker deploys. For production, swap to Redis — interface in `app/services/llm/cache.py` is isolated.
+
+### 6. Why this API shape
+
+| Decision | Reason |
+|---|---|
+| Exactly 2 endpoints | Matches judging harness spec |
+| `POST /optimize-energy` (not PUT/PATCH) | Problem statement mandates POST |
+| No auth | Judge calls without credentials |
+| Binds to `0.0.0.0:8000` | Container-friendly |
+| `503 + Retry-After` on rate limit | Signalling transient failure, not server bug |
+
+### 7. What we deliberately did NOT build
+
+- ❌ Frontend / dashboard — no UI needed for judging
+- ❌ Database — no persistence required
+- ❌ Multi-provider fallback — deferred to keep prelim build small
+- ❌ Auth / rate limit per client — unnecessary for a public judge API
+- ❌ Fine-tuning — hidden cases require zero training
+
 ## Troubleshooting
 
 ### `pydantic_core._pydantic_core.ValidationError: llm_provider`
